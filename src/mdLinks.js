@@ -1,24 +1,46 @@
-import fs from 'node:fs';
+import fs from 'fs/promises';
 import chalk from 'chalk';
+import path from 'path';
 
+//função que extrai os links do texto
 function extraiLinks(texto) {
   const regex = /\[([^[\]]+)\]\((https?:\/\/[^\s/$.?#].[^\s]*)\)/g;
   const capturas = [...texto.matchAll(regex)];
-  // console.log(capturas);
-  const resultado = capturas.map(captura => ({text: captura[1], link: captura[2]}));
-  return resultado.length !== 0 ? resultado : 'não há links no arquivo';
+  const resultado = capturas.map(captura => ({ href: captura[2], text: captura[1] }));
+  return resultado.length !== 0 ? resultado : trataErro({ code: 400 }, 'não há links no arquivo');
 }
 
-function trataErro(erro) {
-  throw new Error(chalk.red(erro.code, 'não há arquivo no diretório'));
+//função que lida com os erros
+function trataErro(erro, mensagemErro) {
+  console.log(erro);
+  return new Error(chalk.red(erro.code, mensagemErro));
 }
 
+//função que lê o arquivo e extrai os links
 function mdLinks(caminhoDoArquivo) {
-  const encoding = 'utf-8';
-  fs.promises
-    .readFile(caminhoDoArquivo, encoding)
-    .then((texto) => console.log(extraiLinks(texto)))
-    .catch(trataErro)
+  if (caminhoDoArquivo.endsWith('.md') ||
+    caminhoDoArquivo.endsWith('.mkd') ||
+    caminhoDoArquivo.endsWith('.mdwn') ||
+    caminhoDoArquivo.endsWith('.mdown') ||
+    caminhoDoArquivo.endsWith('.mdtxt') ||
+    caminhoDoArquivo.endsWith('.mdtext') ||
+    caminhoDoArquivo.endsWith('.markdown') ||
+    caminhoDoArquivo.endsWith('.text')) {
+    fs
+      .readFile(caminhoDoArquivo, 'utf-8')
+      .then((texto) => {
+        let propriedade = extraiLinks(texto);
+        propriedade.forEach((item) => {          
+          item.file = caminhoDoArquivo;
+        });       
+        console.log(JSON.stringify(propriedade)); 
+        return propriedade;
+      })
+      .catch((erroDeLeitura) => console.log(trataErro(erroDeLeitura, 'Houve um problema de leitura')));
+  } else {
+    const erroDeExtensao = { code: 404 };
+    return trataErro(erroDeExtensao, 'Este arquivo não contém extensão Markdown');
+  }
 }
 
-mdLinks('/Users/Maila Ferreira/Desktop/SAP010-md-links/README.md');
+mdLinks(path.resolve('README.md'));
