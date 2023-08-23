@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import chalk from 'chalk';
 import path from 'path';
 
-//função que extrai os links do texto
+//função que extrai os links do arquivo markdown
 function extraiLinks(texto) {
   const regex = /\[([^[\]]+)\]\((https?:\/\/[^\s/$.?#].[^\s]*)\)/g;
   const capturas = [...texto.matchAll(regex)];
@@ -13,27 +13,23 @@ function extraiLinks(texto) {
 //função que lida com os erros
 function trataErro(erro, mensagemErro) {
   console.log(erro);
-  return new Error(chalk.red(erro.code, mensagemErro));
+  throw new Error(chalk.red(erro.code, mensagemErro));
 }
 
-//função que lê o arquivo e extrai os links
+//função que analisa a extensão, se for markdown ele lê o arquivo e extrai os links e adiciona a propriedade 
+//file no objeto, se não for markdown, ele retorna uma msg de erro
 function mdLinks(caminhoDoArquivo) {
-  if (caminhoDoArquivo.endsWith('.md') ||
-    caminhoDoArquivo.endsWith('.mkd') ||
-    caminhoDoArquivo.endsWith('.mdwn') ||
-    caminhoDoArquivo.endsWith('.mdown') ||
-    caminhoDoArquivo.endsWith('.mdtxt') ||
-    caminhoDoArquivo.endsWith('.mdtext') ||
-    caminhoDoArquivo.endsWith('.markdown') ||
-    caminhoDoArquivo.endsWith('.text')) {
+  const extensoesPermitidas = ['.md', '.mkd', '.mdwn', '.mdown', '.mdtxt', '.mdtext', '.markdown', '.text'];
+  if (extensoesPermitidas.includes(path.extname(caminhoDoArquivo))) {
+    const caminhoAbsoluto = path.resolve(caminhoDoArquivo);
     fs
-      .readFile(caminhoDoArquivo, 'utf-8')
+      .readFile(caminhoAbsoluto, 'utf-8')
       .then((texto) => {
         let propriedade = extraiLinks(texto);
-        propriedade.forEach((item) => {          
-          item.file = caminhoDoArquivo;
-        });       
-        console.log(JSON.stringify(propriedade)); 
+        propriedade.forEach((item) => {
+          item.file = caminhoAbsoluto;
+        });
+        console.log(JSON.stringify(propriedade));
         return propriedade;
       })
       .catch((erroDeLeitura) => console.log(trataErro(erroDeLeitura, 'Houve um problema de leitura')));
@@ -43,4 +39,4 @@ function mdLinks(caminhoDoArquivo) {
   }
 }
 
-mdLinks(path.resolve('README.md'));
+export default mdLinks//('README.md');
