@@ -11,8 +11,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\src\\mdLinks.js",
-            "args": ["${workspaceFolder}\\README.md"]
+            "program": "${workspaceFolder}\\src\\cli.js",
+            "args": ["${workspaceFolder}\\README.md", "--validate"]
         }
     ]
 }
