@@ -4,7 +4,7 @@ import path from 'path';
 import axios from 'axios';
 
 //função que extrai os links do arquivo markdown
-function extraiLinks(texto) {
+export function extraiLinks(texto) {
   const regex = /\[([^[\]]+)\]\((https?:\/\/[^\s/$.?#].[^\s]*)\)/g;
   const capturas = [...texto.matchAll(regex)];
   const resultado = capturas.map(captura => ({ href: captura[2], text: captura[1] }));
@@ -12,11 +12,11 @@ function extraiLinks(texto) {
 }
 
 //função que lida com os erros
-function trataErro(erro, mensagemErro) {
+export function trataErro(erro, mensagemErro) {
   throw new Error((erro.code, mensagemErro));
 }
 
-function processarArquivo(caminhoDoArquivo) {
+export function processarArquivo(caminhoDoArquivo) {
   const extensoesPermitidas = ['.md', '.mkd', '.mdwn', '.mdown', '.mdtxt', '.mdtext', '.markdown', '.text'];
   if (extensoesPermitidas.includes(path.extname(caminhoDoArquivo))) {
     const caminhoAbsoluto = path.resolve(caminhoDoArquivo);
@@ -37,7 +37,8 @@ function processarArquivo(caminhoDoArquivo) {
   }
 }
 
-function validaLinks(links) {
+//função que valida os links encontrados e retorna uma promessa
+export function validaLinks(links) {
   const promises = links.map((link) =>
     axios.get(link.href)
       .then((response) => {
@@ -54,36 +55,49 @@ function validaLinks(links) {
   return Promise.all(promises);
 }
 
-
+//função que analisa se é arquivo ou diretório, se é markdown, se tem link, valida os links. Se é diretório, 
+//lê e analisa se está com 
 function mdLinks(caminhoDoArquivo, options) {
-  if (fs.statSync(caminhoDoArquivo).isFile()) {
-    const lista = processarArquivo(caminhoDoArquivo);
-    if (options.validate === true) {
-      return lista.then((data) => {
-        return validaLinks(data)
-          .then((data) => {
-            return data;
-          })
-      });
-    } else {
-      return processarArquivo(caminhoDoArquivo);
-    }
-
-  } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
-    let promises = [];
-    const arquivos = fs.readdirSync(caminhoDoArquivo);
-    arquivos.forEach((nomeDeArquivo) => {
-      if (fs.statSync(`${caminhoDoArquivo}/${nomeDeArquivo}`).isDirectory()) {
-        promises.push(mdLinks(`${caminhoDoArquivo}/${nomeDeArquivo}`, options));
+  return new Promise((resolve, reject) => {
+    if (fs.statSync(caminhoDoArquivo).isFile()) {
+      const lista = processarArquivo(caminhoDoArquivo);
+      if (options.validate === true) {
+        return lista.then((data) => {
+          return validaLinks(data)
+            .then((data) => {
+              return data;
+            })
+        });
       } else {
-        promises.push(processarArquivo(`${caminhoDoArquivo}/${nomeDeArquivo}`));
+        return processarArquivo(caminhoDoArquivo);
       }
-    });
-    return Promise.all(promises)
-      .then((res) => {
-        return res;
-      });
-  }
+
+    } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
+      try {
+        let promises = [];
+        const arquivos = fs.readdirSync(caminhoDoArquivo);
+        arquivos.forEach((nomeDeArquivo) => {
+          if (fs.statSync(`${caminhoDoArquivo}/${nomeDeArquivo}`).isDirectory()) {
+            promises.push(mdLinks(`${caminhoDoArquivo}/${nomeDeArquivo}`, options));
+          } else {
+            promises.push(processarArquivo(`${caminhoDoArquivo}/${nomeDeArquivo}`));
+          }
+        });
+        return Promise.all(promises)
+          .then((results) => {
+            const linksArray = results.reduce(
+              (accumulator, links) => accumulator.concat(links),
+              [],
+            );
+            resolve(linksArray);
+          });
+      } catch (erroDeLeitura) {
+        reject(
+          trataErro(erroDeLeitura, 'Houve um problema de leitura'),
+        );
+      }
+    }
+  })
 }
 
 export default mdLinks;
