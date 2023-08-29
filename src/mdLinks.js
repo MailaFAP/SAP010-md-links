@@ -1,6 +1,5 @@
 import fs from 'fs';
 import fsp from 'fs/promises';
-import chalk from 'chalk';
 import path from 'path';
 import axios from 'axios';
 
@@ -14,7 +13,7 @@ function extraiLinks(texto) {
 
 //função que lida com os erros
 function trataErro(erro, mensagemErro) {
-  throw new Error(chalk.red(erro.code, mensagemErro));
+  throw new Error((erro.code, mensagemErro));
 }
 
 function processarArquivo(caminhoDoArquivo) {
@@ -32,7 +31,7 @@ function processarArquivo(caminhoDoArquivo) {
       })
       .catch((erroDeLeitura) => {
         return trataErro(erroDeLeitura, 'Houve um problema de leitura');
-      });      
+      });
   } else {
     return trataErro({ code: 404 }, 'Este arquivo não contém extensão Markdown');
   }
@@ -62,19 +61,28 @@ function mdLinks(caminhoDoArquivo, options) {
     if (options.validate === true) {
       return lista.then((data) => {
         return validaLinks(data)
-        .then((data) => {
-          return data;
-        })
-      })
+          .then((data) => {
+            return data;
+          })
+      });
     } else {
       return processarArquivo(caminhoDoArquivo);
     }
 
-  } else if (fs.stat(caminhoDoArquivo).isDirectory()) {
+  } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
+    let promises = [];
     const arquivos = fs.readdirSync(caminhoDoArquivo);
     arquivos.forEach((nomeDeArquivo) => {
-      return processarArquivo(`${caminhoDoArquivo}/${nomeDeArquivo}`);
+      if (fs.statSync(`${caminhoDoArquivo}/${nomeDeArquivo}`).isDirectory()) {
+        promises.push(mdLinks(`${caminhoDoArquivo}/${nomeDeArquivo}`, options));
+      } else {
+        promises.push(processarArquivo(`${caminhoDoArquivo}/${nomeDeArquivo}`));
+      }
     });
+    return Promise.all(promises)
+      .then((res) => {
+        return res;
+      });
   }
 }
 

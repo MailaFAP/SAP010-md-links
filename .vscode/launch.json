@@ -12,7 +12,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\src\\cli.js",
-            "args": ["${workspaceFolder}\\README.md", "--validate"]
+            "args": ["C:\\Users\\Maila Ferreira\\Desktop\\novodir"]
         }
     ]
 }

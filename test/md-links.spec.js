@@ -1,8 +1,4 @@
-import mdLinks from '../src/mdLinks';
-import trataErro from '../src/mdLinks';
-import chalk from 'chalk';
-import fs from 'node:fs';
-import axios from 'axios';
+import {mdLinks, trataErro, extraiLinks} from '../src/mdLinks';
 
 
 describe('extraiLinks', () => {
@@ -10,7 +6,7 @@ describe('extraiLinks', () => {
     const texto = 'Olá, https://www.exemplo.com este é um exemplo de link em um texto';
     const resultado = extraiLinks(texto);
     expect(Array.isArray(resultado)).toBe(true);
-    expect(resultado[0]).toEqual({ href: 'https://www.exemplo.com', text: 'Exemplo de link' });
+    expect(resultado[0]).toEqual({ href: 'https://www.exemplo.com', text: 'este é um exemplo de link' });
   });
   it('Retorna mensagem de erro quando não há links', () => {
     const texto = 'Este texto não contém links';
