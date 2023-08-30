@@ -31,6 +31,7 @@ Instale a biblioteca no terminal através do comando: <strong>`npm install md-li
 
 1. Rode o comando <strong>`mdlinks` + o caminho do seu arquivo </strong>, e será retornado o caminho, text e o link do arquivo seleciondao. Veja o exemplo abaixo:  
 
+    `md-links <caminho-do-arquivo>`
 
 2. Se você deseja validar os links desse arquivo, utilize a propriedade <strong>--validade</strong>, esta fará uma requisição HTTP e retornará o status e ok do seu link. <br>
 Comando: <br>

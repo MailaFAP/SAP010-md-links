@@ -17,6 +17,7 @@ export function trataErro(erro, mensagemErro) {
   return new Error(erro.code, mensagemErro);
 }
 
+
 export function processarArquivo(caminhoDoArquivo) {
   const extensoesPermitidas = ['.md', '.mkd', '.mdwn', '.mdown', '.mdtxt', '.mdtext', '.markdown', '.text'];
   if (extensoesPermitidas.includes(path.extname(caminhoDoArquivo))) {
