@@ -12,7 +12,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\src\\cli.js",
-            "args": ["C:\\Users\\Maila Ferreira\\Desktop\\novodir"]
+            "args": ["C:\\Users\\Maila Ferreira\\Desktop\\SAP010-md-links\\testes.aquivos\\"]
         }
     ]
 }

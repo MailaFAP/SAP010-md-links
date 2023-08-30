@@ -1,5 +1,6 @@
-import {mdLinks, trataErro, extraiLinks} from '../src/mdLinks';
+import {mdLinks, trataErro, extraiLinks, validaLinks} from '../src/mdLinks';
 
+jest.mock('axios');
 
 describe('extraiLinks', () => {
   it('Extrai links e retorna um href e text com tratamento de erro', () => {
@@ -10,9 +11,7 @@ describe('extraiLinks', () => {
   });
   it('Retorna mensagem de erro quando não há links', () => {
     const texto = 'Este texto não contém links';
-    const resultado = extraiLinks(texto);
-    const trataErro = ({ code: 400 }, 'não há links no arquivo')
-    expect(resultado).toEqual(trataErro);
+    expect(() => extraiLinks(texto)).toThrowError('não há links no arquivo');
   });
 });
 
@@ -27,3 +26,30 @@ describe('extraiLinks', () => {
     }).toThrowError('400 não há links no arquivo');
   });
 });*/
+
+describe('validaLinks', () => {
+  it('should return status "ok" after validate a valid link', () => {
+    const links = [
+      { link: 'https://exemplo.com/valido' },
+      { link: 'https://exemplo.com/invalido' },
+    ];
+    validaLinks(links)
+    .then((response) => {
+      expect(response).toEqual([
+        {
+          link: 'https://exemplo.com/valido',
+          status: 200,
+          ok: 'OK',
+        },
+        {
+          link: 'https://exemplo.com/invalido',
+          status: 404,
+          ok: 'FAIL',
+        }
+      ]);
+    })
+    .catch((error) => {
+      error.message;
+    });
+  });
+});
