@@ -14,7 +14,7 @@ export function extraiLinks(texto) {
 //função que lida com os erros
 export function trataErro(erro, mensagemErro) {
   console.log(erro);
-  return new Error(erro.code, mensagemErro);
+  return Promise.reject(erro.code, mensagemErro);
 }
 
 
@@ -35,7 +35,7 @@ export function processarArquivo(caminhoDoArquivo) {
         return trataErro(erroDeLeitura, 'Houve um problema de leitura');
       });
   } else {
-    return trataErro({ code: 404 }, 'Este arquivo não contém extensão Markdown');
+    return trataErro( {code: 404} , 'Este arquivo não contém extensão Markdown');
   }
 }
 
@@ -97,7 +97,7 @@ function mdLinks(caminhoDoArquivo, options) {
           return linksArray;
         });
     } catch (erroDeLeitura) {
-      trataErro(erroDeLeitura, 'Houve um problema de leitura');
+      return trataErro(erroDeLeitura, 'Houve um problema de leitura');
     }
   }
 }

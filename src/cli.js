@@ -9,6 +9,7 @@ const options = {
   validateAndStats: process.argv.includes('--validate') && process.argv.includes('--stats'),
 }
 
+
 function statsLinks(links){
   const listaLinks = links.length;
   const uniqueLinks = [... new Set(links.map((link) => link.href))].length;
@@ -26,7 +27,7 @@ mdLinks(path, options)
     const statsLink = statsLinks(results);
     console.log(chalk.gray('Total links:' + statsLink.total));
     console.log(chalk.gray('Unique links:' + statsLink.unique));
-    console.log(chalk.bgGray('Broken links:' + statsLink.broken));
+    console.log(chalk.redBright('Broken links:' + statsLink.broken));
 
   } else if (options.validate){
     results.forEach((link) => {
@@ -41,6 +42,7 @@ mdLinks(path, options)
         console.log(chalk.gray('Status HTTP:' + link.status));
         console.log(chalk.gray('OK:' + link.ok));
       }
+      console.log('------------------------------------------------------------------------');
     });
 
   } else if (options.stats){
@@ -54,8 +56,9 @@ mdLinks(path, options)
       console.log(chalk.gray('Text:' + link.text));
       console.log(chalk.gray('Href:' + link.href));      
     })
+    console.log('------------------------------------------------------------------------');
   }
 })
 .catch((error) => {
-  console.error(error);
+  console.log(error, 'aqui está o erro');
 });
