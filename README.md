@@ -27,7 +27,7 @@ Sendo assim,o objetivo deste projeto foi desenvolver uma biblioteca que lê arqu
 
 ## 2. Guia de instalação e uso
 
-Instale a biblioteca no terminal através do comando: <strong>`npm install md-links-`</strong>
+Instale a biblioteca no terminal através do comando: <strong>`npm install md-links-mailaferreira`</strong>
 
 1. Rode o comando <strong>`mdlinks` + o caminho do seu arquivo </strong>, e será retornado o caminho, text e o link do arquivo seleciondao. Veja o exemplo abaixo:  
 

@@ -9,12 +9,12 @@ export function extraiLinks(texto) {
   const capturas = [...texto.matchAll(regex)];
   const resultado = capturas.map(captura => ({ href: captura[2], text: captura[1] }));
   return resultado.length !== 0 ? resultado : [{ erro: 'Este arquivo não contém links.' }];
+
 }
 
 //função que lida com os erros
-export function trataErro(erro, mensagemErro) {
-  console.log(erro);
-  return Promise.reject(erro.code, mensagemErro);
+export function trataErro(mensagemErro) {
+  return Promise.reject(mensagemErro);
 }
 
 
@@ -31,11 +31,8 @@ export function processarArquivo(caminhoDoArquivo) {
         });
         return links;
       })
-      .catch((erroDeLeitura) => {
-        return trataErro(erroDeLeitura, 'Houve um problema de leitura');
-      });
   } else {
-    return trataErro( {code: 404} , 'Este arquivo não contém extensão Markdown');
+    return trataErro('Este arquivo não contém extensão Markdown');
   }
 }
 
@@ -64,21 +61,19 @@ export function validaLinks(links) {
 //função que analisa se é arquivo ou diretório, se é markdown, se tem link, valida os links. Se é diretório, 
 //lê e analisa se está com 
 function mdLinks(caminhoDoArquivo, options) {
-  if (fs.statSync(caminhoDoArquivo).isFile()) {
-    const lista = processarArquivo(caminhoDoArquivo);
-    if (options.validate === true) {
-      return lista.then((data) => {
-        return validaLinks(data)
-          .then((data) => {
-            return data;
-          })
-      });
-    } else {
-      return lista;
-    }
+  try {
+    if (fs.statSync(caminhoDoArquivo).isFile()) {
+      return processarArquivo(caminhoDoArquivo)
+              .then(lista =>{
+                if (options.stats){
+                  return statsLinks(lista)
+                } 
+                return lista; 
 
-  } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
-    try {
+              } )
+              .catch(error => error) 
+
+    } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
       let promises = [];
       const arquivos = fs.readdirSync(caminhoDoArquivo);
       arquivos.forEach((nomeDeArquivo) => {
@@ -96,10 +91,21 @@ function mdLinks(caminhoDoArquivo, options) {
           );
           return linksArray;
         });
-    } catch (erroDeLeitura) {
-      return trataErro(erroDeLeitura, 'Houve um problema de leitura');
     }
+  } catch {
+    return trataErro('Caminho incorreto/inexistente');
   }
+}
+
+ function statsLinks(links){
+  const listaLinks = links.length;
+  const uniqueLinks = [... new Set(links.map((link) => link.href))].length;
+  const brokenLinks = links.filter((link) => link.ok === 'FAIL').length;
+  return {
+    total: listaLinks,
+    unique: uniqueLinks,
+    broken: brokenLinks,
+  };
 }
 
 export default mdLinks;

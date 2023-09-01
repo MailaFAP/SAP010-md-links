@@ -6,24 +6,11 @@ const path = process.argv[2];
 const options = {
   validate: process.argv.includes('--validate'),
   stats: process.argv.includes('--stats'),
-  validateAndStats: process.argv.includes('--validate') && process.argv.includes('--stats'),
-}
-
-
-function statsLinks(links){
-  const listaLinks = links.length;
-  const uniqueLinks = [... new Set(links.map((link) => link.href))].length;
-  const brokenLinks = links.filter((link) => link.ok === 'FAIL').length;
-  return {
-    total: listaLinks,
-    unique: uniqueLinks,
-    broken: brokenLinks,
-  };
 }
 
 mdLinks(path, options)
 .then((results) => {
-  if (options.validateAndStats){
+  if (options.validate && options.stats){
     const statsLink = statsLinks(results);
     console.log(chalk.gray('Total links:' + statsLink.total));
     console.log(chalk.gray('Unique links:' + statsLink.unique));
@@ -51,14 +38,15 @@ mdLinks(path, options)
     console.log(chalk.gray('Unique links:' + statsLink.unique));
 
   } else {
-    results.forEach((link) => {
+    /*results.forEach((link) => {
       console.log(chalk.gray('File:' + link.file));
       console.log(chalk.gray('Text:' + link.text));
       console.log(chalk.gray('Href:' + link.href));      
-    })
+    })*/
+    console.log(results);
     console.log('------------------------------------------------------------------------');
   }
 })
 .catch((error) => {
-  console.log(error, 'aqui está o erro');
+  console.log(error);
 });
