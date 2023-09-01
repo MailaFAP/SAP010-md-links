@@ -8,7 +8,7 @@ export function extraiLinks(texto) {
   const regex = /\[([^[\]]+)\]\((https?:\/\/[^\s/$.?#].[^\s]*)\)/g;
   const capturas = [...texto.matchAll(regex)];
   const resultado = capturas.map(captura => ({ href: captura[2], text: captura[1] }));
-  return resultado.length !== 0 ? resultado : [{ erro: 'Este arquivo não contém links.' }];
+  return resultado.length !== 0 ? resultado : [{ error: 'Este arquivo não contém links.' }];
 
 }
 
@@ -17,7 +17,7 @@ export function trataErro(mensagemErro) {
   return Promise.reject(mensagemErro);
 }
 
-
+//função que analisa se é markdown, informa o caminho absoluto, lê o arquivo e extrai links 
 export function processarArquivo(caminhoDoArquivo) {
   const extensoesPermitidas = ['.md', '.mkd', '.mdwn', '.mdown', '.mdtxt', '.mdtext', '.markdown', '.text'];
   if (extensoesPermitidas.includes(path.extname(caminhoDoArquivo))) {
@@ -30,48 +30,56 @@ export function processarArquivo(caminhoDoArquivo) {
           link.file = caminhoAbsoluto;
         });
         return links;
-      })
+      }).catch(error => error);
   } else {
-    return trataErro('Este arquivo não contém extensão Markdown');
+    return [{error :'Este arquivo não contém extensão Markdown'}];
   }
 }
 
 //função que valida os links encontrados e retorna uma promessa
 export function validaLinks(links) {
   const promises = links.map((link) => {
-    if (link.erro === undefined) {
-      axios.get(link.href)
-        .then((response) => {
-          link.status = response.status;
-          link.ok = response.status === 200 ? 'OK' : 'FAIL';
-          return link;
-        })
-        .catch(() => {
-          link.status = 404;
-          link.ok = 'FAIL';
-          return link;
-        });
-    } else {
-      return link;
-    }
+    axios.get(link.href)
+      .then((response) => {
+        link.status = response.status;
+        link.ok = response.status === 200 ? 'OK' : 'FAIL';
+        return link;
+      })
+      .catch(() => {
+        link.status = 404;
+        link.ok = 'FAIL';
+        return link;
+      });
   });
   return Promise.all(promises);
 }
 
+export function statsLinks(links) {
+  const listaLinks = links.length;
+  const uniqueLinks = [... new Set(links.map((link) => link.href))].length;
+  const brokenLinks = links.filter((link) => link.ok === 'FAIL').length;
+  return {
+    total: listaLinks,
+    unique: uniqueLinks,
+    broken: brokenLinks,
+  };
+}
+
 //função que analisa se é arquivo ou diretório, se é markdown, se tem link, valida os links. Se é diretório, 
 //lê e analisa se está com 
-function mdLinks(caminhoDoArquivo, options) {
+/*function mdLinks(caminhoDoArquivo, options) {
   try {
     if (fs.statSync(caminhoDoArquivo).isFile()) {
       return processarArquivo(caminhoDoArquivo)
-              .then(lista =>{
-                if (options.stats){
-                  return statsLinks(lista)
-                } 
-                return lista; 
+        .then(lista => {
+          if (options.stats) {
+            return statsLinks(lista)
+          }
+          console.log({ lista });
+          return lista;
 
-              } )
-              .catch(error => error) 
+        })
+        .catch(error => error);
 
     } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
       let promises = [];
@@ -95,17 +103,55 @@ function mdLinks(caminhoDoArquivo, options) {
   } catch {
     return trataErro('Caminho incorreto/inexistente');
   }
+}*/
+
+
+function lerArquivo(caminhoDoArquivo) {
+  return processarArquivo(caminhoDoArquivo)
+    .then(lista => {
+      return lista;
+    })
+    .catch(error => error);
 }
 
- function statsLinks(links){
-  const listaLinks = links.length;
-  const uniqueLinks = [... new Set(links.map((link) => link.href))].length;
-  const brokenLinks = links.filter((link) => link.ok === 'FAIL').length;
-  return {
-    total: listaLinks,
-    unique: uniqueLinks,
-    broken: brokenLinks,
-  };
+function lerDiretorio(caminhoDoDiretorio) {
+  let promises = [];
+  const arquivos = fs.readdirSync(caminhoDoDiretorio);
+  arquivos.forEach((nomeDeArquivo) => {
+    if (fs.statSync(`${caminhoDoDiretorio}/${nomeDeArquivo}`).isDirectory()) {
+      promises.push(lerDiretorio(`${caminhoDoDiretorio}/${nomeDeArquivo}`, options));
+    } else {
+      promises.push(processarArquivo(`${caminhoDoDiretorio}/${nomeDeArquivo}`));
+    }
+  });
+  return Promise.allSettled(promises)
+    .then((results) => {
+      const linksArray = results.reduce(
+        (accumulator, result) => {
+          if (result.status === 'fulfilled') {
+            return accumulator.concat(result.value);
+          } else {
+            console.error(result.reason);
+            return accumulator;
+          }
+        },
+        [],
+      );
+      return linksArray;
+    });
+}
+
+
+function mdLinks(caminhoDoArquivo, options) {
+  try {
+    if (fs.statSync(caminhoDoArquivo).isFile()) {
+      return lerArquivo(caminhoDoArquivo, options);
+    } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
+      return lerDiretorio(caminhoDoArquivo, options);
+    }
+  } catch {
+    return trataErro('Caminho incorreto/inexistente');
+  }
 }
 
 export default mdLinks;

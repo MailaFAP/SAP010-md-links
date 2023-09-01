@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import mdLinks from './mdLinks.js';
-
+import statsLinks from './mdLinks.js';
 
 const path = process.argv[2];
 const options = {
