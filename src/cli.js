@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import mdLinks from './mdLinks.js';
-import statsLinks from './mdLinks.js';
+import { statsLinks } from './mdLinks.js';
 
 const path = process.argv[2];
 const options = {
@@ -18,18 +18,23 @@ mdLinks(path, options)
 
   } else if (options.validate){
     results.forEach((link) => {
-      console.log(chalk.gray('File:' + link.file));
-      console.log(chalk.gray('Text:' + link.text));
-      console.log(chalk.gray('Href:' + link.href));
-      
-      if(link.ok === 'FAIL'){
-        console.log(chalk.red('Status HTTP:' + link.status))
-        console.log(chalk.red('OK:' + link.ok ))
+      if (link.error !== undefined){
+        console.log(chalk.red(link.error));
+        console.log(chalk.red(link.file));
       } else {
-        console.log(chalk.gray('Status HTTP:' + link.status));
-        console.log(chalk.gray('OK:' + link.ok));
+        console.log(chalk.gray('File:' + link.file));
+        console.log(chalk.gray('Text:' + link.text));
+        console.log(chalk.gray('Href:' + link.href));
+        
+        if (link.ok === 'FAIL'){
+          console.log(chalk.red('Status HTTP:' + link.status))
+          console.log(chalk.red('OK:' + link.ok ))
+        } else {
+          console.log(chalk.gray('Status HTTP:' + link.status));
+          console.log(chalk.gray('OK:' + link.ok));
+        }
+        console.log('------------------------------------------------------------------------');
       }
-      console.log('------------------------------------------------------------------------');
     });
 
   } else if (options.stats){

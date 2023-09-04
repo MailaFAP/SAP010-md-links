@@ -32,7 +32,7 @@ export function processarArquivo(caminhoDoArquivo) {
         return links;
       }).catch(error => error);
   } else {
-    return [{error :'Este arquivo não contém extensão Markdown'}];
+    return [{ error: 'Este arquivo não contém extensão Markdown' }];
   }
 }
 
@@ -56,6 +56,7 @@ export function validaLinks(links) {
 
 export function statsLinks(links) {
   const listaLinks = links.length;
+  //colocar dentro do map e filter um if para não contabilizar link.error
   const uniqueLinks = [... new Set(links.map((link) => link.href))].length;
   const brokenLinks = links.filter((link) => link.ok === 'FAIL').length;
   return {
@@ -64,46 +65,6 @@ export function statsLinks(links) {
     broken: brokenLinks,
   };
 }
-
-//função que analisa se é arquivo ou diretório, se é markdown, se tem link, valida os links. Se é diretório, 
-//lê e analisa se está com 
-/*function mdLinks(caminhoDoArquivo, options) {
-  try {
-    if (fs.statSync(caminhoDoArquivo).isFile()) {
-      return processarArquivo(caminhoDoArquivo)
-        .then(lista => {
-          if (options.stats) {
-            return statsLinks(lista)
-          }
-          console.log({ lista });
-          return lista;
-
-        })
-        .catch(error => error);
-
-    } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
-      let promises = [];
-      const arquivos = fs.readdirSync(caminhoDoArquivo);
-      arquivos.forEach((nomeDeArquivo) => {
-        if (fs.statSync(`${caminhoDoArquivo}/${nomeDeArquivo}`).isDirectory()) {
-          promises.push(mdLinks(`${caminhoDoArquivo}/${nomeDeArquivo}`, options));
-        } else {
-          promises.push(processarArquivo(`${caminhoDoArquivo}/${nomeDeArquivo}`));
-        }
-      });
-      return Promise.all(promises)
-        .then((results) => {
-          const linksArray = results.reduce(
-            (accumulator, links) => accumulator.concat(links),
-            [],
-          );
-          return linksArray;
-        });
-    }
-  } catch {
-    return trataErro('Caminho incorreto/inexistente');
-  }
-}*/
 
 
 function lerArquivo(caminhoDoArquivo) {
@@ -114,7 +75,7 @@ function lerArquivo(caminhoDoArquivo) {
     .catch(error => error);
 }
 
-function lerDiretorio(caminhoDoDiretorio) {
+function lerDiretorio(caminhoDoDiretorio, options) {
   let promises = [];
   const arquivos = fs.readdirSync(caminhoDoDiretorio);
   arquivos.forEach((nomeDeArquivo) => {
@@ -145,11 +106,24 @@ function lerDiretorio(caminhoDoDiretorio) {
 function mdLinks(caminhoDoArquivo, options) {
   try {
     if (fs.statSync(caminhoDoArquivo).isFile()) {
-      return lerArquivo(caminhoDoArquivo, options);
+      return lerArquivo(caminhoDoArquivo, options)
+        .then((links) => {
+          if (links.length > 0 && links[0].error === undefined) {
+            if (options.validate) {
+              return validaLinks(links);
+            } else if (options.stats) {
+              return statsLinks(links);
+            } else {
+              return links;
+            }
+          } else {
+            return links;
+          }
+        });
     } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
       return lerDiretorio(caminhoDoArquivo, options);
     }
-  } catch {
+  } catch (e) {
     return trataErro('Caminho incorreto/inexistente');
   }
 }
