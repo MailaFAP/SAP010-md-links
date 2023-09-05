@@ -9,12 +9,6 @@ export function extraiLinks(texto) {
   const capturas = [...texto.matchAll(regex)];
   const resultado = capturas.map(captura => ({ href: captura[2], text: captura[1] }));
   return resultado.length !== 0 ? resultado : [{ error: 'Este arquivo não contém links.' }];
-
-}
-
-//função que lida com os erros
-export function trataErro(mensagemErro) {
-  return Promise.reject(mensagemErro);
 }
 
 //função que analisa se é markdown, informa o caminho absoluto, lê o arquivo e extrai links 
@@ -30,7 +24,8 @@ export function processarArquivo(caminhoDoArquivo) {
           link.file = caminhoAbsoluto;
         });
         return links;
-      }).catch(error => error);
+      })
+      .catch(error => error);
   } else {
     return [{ error: 'Este arquivo não contém extensão Markdown' }];
   }
@@ -39,7 +34,7 @@ export function processarArquivo(caminhoDoArquivo) {
 //função que valida os links encontrados e retorna uma promessa
 export function validaLinks(links) {
   const promises = links.map((link) => {
-    axios.get(link.href)
+    return axios.get(link.href)
       .then((response) => {
         link.status = response.status;
         link.ok = response.status === 200 ? 'OK' : 'FAIL';
@@ -54,10 +49,10 @@ export function validaLinks(links) {
   return Promise.all(promises);
 }
 
+//colocar dentro do map e filter um if para não contabilizar link.error
 export function statsLinks(links) {
   const listaLinks = links.length;
-  //colocar dentro do map e filter um if para não contabilizar link.error
-  const uniqueLinks = [... new Set(links.map((link) => link.href))].length;
+  const uniqueLinks = [...new Set(links.map((link) => link.href))].length;
   const brokenLinks = links.filter((link) => link.ok === 'FAIL').length;
   return {
     total: listaLinks,
@@ -65,7 +60,6 @@ export function statsLinks(links) {
     broken: brokenLinks,
   };
 }
-
 
 function lerArquivo(caminhoDoArquivo) {
   return processarArquivo(caminhoDoArquivo)
@@ -92,7 +86,6 @@ function lerDiretorio(caminhoDoDiretorio, options) {
           if (result.status === 'fulfilled') {
             return accumulator.concat(result.value);
           } else {
-            console.error(result.reason);
             return accumulator;
           }
         },
@@ -121,10 +114,23 @@ function mdLinks(caminhoDoArquivo, options) {
           }
         });
     } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
-      return lerDiretorio(caminhoDoArquivo, options);
+      return lerDiretorio(caminhoDoArquivo, options)
+      .then((links) => {
+        if (links.length > 0 && links[0].error === undefined) {
+          if (options.validate) {
+            return validaLinks(links);
+          } else if (options.stats) {
+            return statsLinks(links);
+          } else {
+            return links;
+          }
+        } else {
+          return links;
+        }
+      });
     }
   } catch (e) {
-    return trataErro('Caminho incorreto/inexistente');
+    return Promise.reject('Caminho incorreto/inexistente');
   }
 }
 

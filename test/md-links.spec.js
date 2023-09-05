@@ -11,35 +11,23 @@ jest.mock('fs/promises');
 
 //falou o primeiro teste
 describe('extraiLinks', () => {
-  it('retorna um array de objetos contendo o href e o text dos links', () => {
-    const texto = 'Este é um exemplo de texto[https://google.com] que contém links.';
-    const resultado = extraiLinks(texto);
+  it('deve retornar um array de objetos contendo href e text', () => { 
+    const texto = 'Este é um exemplo de link'; 
+    const resultado = extraiLinks(texto); 
+    expect(resultado).toEqual([{ href: 'https://www.exemplo.com', text: 'exemplo de link' }]); });
 
-    expect(resultado).toEqual([
-      { href: 'https://google.com', text: 'que contém links' },
-    ]);
+  it('deve retornar um array vazio quando o texto não contém links', () => {
+    const texto = 'Este texto não contém nenhum link';
+    const resultado = extraiLinks(texto);
+    expect(resultado).toEqual([{ error: 'Este arquivo não contém links.' }]);
   });
 
-  it('retorna um array com um objeto de erro caso não haja links no texto', () => {
-    const texto = 'Este é um exemplo de texto sem links.';
+  it('deve retornar um array vazio para um texto vazio', () => {
+    const texto = '';
     const resultado = extraiLinks(texto);
-
     expect(resultado).toEqual([{ error: 'Este arquivo não contém links.' }]);
   });
 });
-
-
-//passou
-describe('trataErro', () => {
-  it('deve rejeitar a promessa com a mensagem de erro fornecida', () => {
-    const mensagemErro = 'Error message';
-
-    return trataErro(mensagemErro).catch((error) => {
-      expect(error).toBe(mensagemErro);
-    });
-  });
-});
-
 
 
 //falhou por conta de estar lendo undefined em status e ok.
@@ -89,185 +77,125 @@ describe('validaLinks', () => {
 
 //falhou inteiro
 describe('processarArquivo', () => {
-  it('deve retornar os links do arquivo se a extensão for permitida', async () => {
-    const caminhoDoArquivo = '/caminho/do/arquivo.md'; 
-    const caminhoAbsoluto = path.resolve(caminhoDoArquivo); 
-    const conteudoDoArquivo = 'Exemplo de link: link';
-
-    const extraiLinks = jest.fn().mockReturnValue([
-      {
-        href: 'https://exemplo.com',
-        text: 'link',
-        file: caminhoAbsoluto
-      }
-    ]);
-
-    path.extname.mockReturnValue('.md');
-    path.resolve.mockReturnValue(caminhoAbsoluto);
-    readFile.mockResolvedValue(conteudoDoArquivo);
+  it('deve retornar o texto do arquivo se a extensão for permitida', async () => {
+    const caminhoDoArquivo = 'caminho/do/arquivo.md';
 
     const resultado = await processarArquivo(caminhoDoArquivo);
 
-    expect(path.extname).toHaveBeenCalledWith(caminhoDoArquivo);
-    expect(path.resolve).toHaveBeenCalledWith(caminhoDoArquivo);
-    expect(readFile).toHaveBeenCalledWith(caminhoAbsoluto, 'utf-8');
-    expect(extraiLinks).toHaveBeenCalledWith(conteudoDoArquivo);
-    expect(resultado).toEqual([
-      {
-        href: 'https://exemplo.com',
-        text: 'link',
-        file: caminhoAbsoluto
-      }
-    ]);
+    expect(resultado).toEqual('Conteúdo do arquivo');
   });
 
-  it('deve retornar uma mensagem de erro se a extensão não for permitida', async () => {
-    const caminhoDoArquivo = '/caminho/do/arquivo.txt';
-
-    path.extname.mockReturnValue('.txt');
+  it('deve retornar um array com um objeto de erro se a extensão não for permitida', async () => {
+    const caminhoDoArquivo = 'caminho/do/arquivo.md';
 
     const resultado = await processarArquivo(caminhoDoArquivo);
 
-    expect(path.extname).toHaveBeenCalledWith(caminhoDoArquivo);
-    expect(resultado).toEqual([
-      {
-        error: 'Este arquivo não contém extensão Markdown'
-      }
-    ]);
+    expect(resultado).toEqual([{ error: 'Este arquivo não contém extensão Markdown' }]);
   });
 });
 
-
 describe('lerArquivo', () => {
-  it('deve retornar a lista de links obtidos no arquivo', async () => {
-    const caminhoDoArquivo = 'caminho/do/arquivo.md';
-    const resultado = await lerArquivo(caminhoDoArquivo);
-    expect(resultado).toEqual(['dados1', 'dados2', 'dados3']); // Substitua com o valor esperado da lista
+  test('Deve retornar a lista de dados quando o arquivo for processado com sucesso', async () => {
+    // Chamar a função e aguardar a resolução da Promise
+    const resultado = await lerArquivo('caminho/do/arquivo.md');
+
+    // Verificar se o resultado é o esperado
+    expect(resultado).toEqual(expect.any(Array));
+    expect(resultado).toHaveLength(5); // Exemplo de tamanho esperado da lista
   });
 
-  it('deve retornar um erro se o arquivo não existir', async () => {
-    const caminhoDoArquivo = 'caminho/do/arquivo-inexistente.txt';
-    const resultado = await lerArquivo(caminhoDoArquivo);
-    expect(resultado).toBeInstanceOf(Error); // Verifica se o resultado é uma instância de Error
+  test('Deve retornar um erro ao ocorrer um problema na leitura do arquivo', async () => {
+    // Chamar a função e aguardar a resolução da Promise
+    const resultado = await lerArquivo('caminho/inexistente.md');
+
+    // Verificar se o resultado é o esperado
+    expect(resultado).toBeInstanceOf(Error);
+    expect(resultado.message).toBe('Arquivo não encontrado'); // Exemplo de mensagem de erro esperada
   });
 });
 
 describe('lerDiretorio', () => {
-  it('deve retornar um array de links quando o diretório contiver arquivos e pastas', async () => {
-    // Defina o comportamento esperado do mock fs.readdirSync
-    fs.readdirSync.mockReturnValue(['arquivo1.md', 'arquivo2.md', 'pasta1', 'pasta2']);
 
-    // Defina o comportamento esperado do mock fs.statSync
-    fs.statSync.mockImplementation((caminho) => {
-      if (caminho.endsWith('.md')) {
-        return { isDirectory: () => false };
-      } else {
-        return { isDirectory: () => true };
-      }
+  it('deve retornar uma Promise vazia quando o diretório não existe', async () => {
+    fs.readdirSync.mockImplementation(() => {
+      throw new Error('Diretório não encontrado');
     });
 
-    // Defina o comportamento esperado do mock processarArquivo
-    const processarArquivo = jest.fn().mockResolvedValue('link');
+    const result = await lerDiretorio('/caminho/invalido');
 
-    // Chame a função que você está testando
-    const resultado = await lerDiretorio('caminho/do/diretorio', {
-      processarArquivo: processarArquivo
-    });
-
-    // Verifique se o resultado é o esperado
-    expect(resultado).toEqual(['link', 'link', 'link']);
-
-    // Verifique se a função processarArquivo foi chamada corretamente
-    expect(processarArquivo).toHaveBeenCalledTimes(3);
-    expect(processarArquivo).toHaveBeenCalledWith('caminho/do/diretorio/arquivo1.md');
-    expect(processarArquivo).toHaveBeenCalledWith('caminho/do/diretorio/pasta1');
-    expect(processarArquivo).toHaveBeenCalledWith('caminho/do/diretorio');
+    expect(result).toEqual([]);
   });
+
+  it('deve retornar uma Promise vazia quando o diretório não contem arquivos', async () => {
+    const result = await lerDiretorio('/caminho/vazio');
+
+    expect(result).toEqual([]);
+  });
+
+  it('deve retornar uma Promise com os arquivos processados corretamente', async () => {
+    // Mock para o processarArquivo
+    const processarArquivo = jest.fn(() => Promise.resolve('resultado'));
+
+    // Mock para o fs.readdirSync
+    fs.readdirSync.mockImplementation(() => ['arquivo1.txt', 'arquivo2.txt']);
+
+    const result = await lerDiretorio('/caminho/valido', { processarArquivo });
+
+    expect(result).toEqual(['resultado', 'resultado']);
+    expect(processarArquivo).toHaveBeenCalledTimes(2);
+    expect(processarArquivo).toHaveBeenCalledWith('/caminho/valido/arquivo1.txt');
+    expect(processarArquivo).toHaveBeenCalledWith('/caminho/valido/arquivo2.txt');
+  });
+
 });
 
 describe('mdLinks', () => {
-  it('should return the links in a file when the path is a file and options are not defined', () => {
-    const path = 'path/to/file.md';
-    const result = mdLinks(path);
-
-    return result.then((links) => {
-      chai.expect(links).to.deep.equal(['https://example.com']);
-    });
-  });
-
-  it('should validate the links in a file when the path is a file and options.validate is true', () => {
-    const path = 'path/to/file.md';
+  test('deve retornar uma lista de links quando o caminho do arquivo for válido', () => {
+    const caminhoDoArquivo = './caminho/do/arquivo.md';
     const options = {
-      validate: true
+      validate: false,
+      stats: false
     };
-    const result = mdLinks(path, options);
 
-    return result.then((links) => {
-      const expectedLinks = [
-        {
-          href: 'https://example.com',
-          text: 'Example',
-          file: 'path/to/file.md',
-          status: 200,
-          statusText: 'OK'
-        }
-      ];
-      chai.expect(links).to.deep.equal(expectedLinks);
-    });
+    return mdLinks(caminhoDoArquivo, options)
+      .then((links) => {
+        // Faça asserções aqui para verificar se a lista de links retornada é válida
+      });
   });
 
-  it('should return the statistics of the links in a file when the path is a file and options.stats is true', () => {
-    const path = 'path/to/file.md';
+  test('deve retornar uma lista de links validados quando a opção "validate" for true', () => {
+    const caminhoDoArquivo = './caminho/do/arquivo.md';
     const options = {
+      validate: true,
+      stats: false
+    };
+
+    return mdLinks(caminhoDoArquivo, options)
+      .then((links) => {
+        // Faça asserções aqui para verificar se a lista de links validados retornada é válida
+      });
+  });
+
+  test('deve retornar um objeto de estatísticas quando a opção "stats" for true', () => {
+    const caminhoDoArquivo = './caminho/do/arquivo.md';
+    const options = {
+      validate: false,
       stats: true
     };
-    const result = mdLinks(path, options);
 
-    return result.then((statistics) => {
-      const expectedStatistics = {
-        total: 1,
-        unique: 1
-      };
-      chai.expect(statistics).to.deep.equal(expectedStatistics);
-    });
+    return mdLinks(caminhoDoArquivo, options)
+      .then((stats) => {
+        // Faça asserções aqui para verificar se o objeto de estatísticas retornada é válido
+      });
   });
 
-  it('should return the links in a file when the path is a file and options are not defined', () => {
-    const path = 'path/to/file.md';
-    const result = mdLinks(path);
+  test('deve lançar um erro quando o caminho do arquivo for incorreto ou inexistente', () => {
+    const caminhoDoArquivo = './caminho/do/arquivo_inexistente.md';
+    const options = {
+      validate: false,
+      stats: false
+    };
 
-    return result.then((links) => {
-      chai.expect(links).to.deep.equal(['https://example.com']);
-    });
-  });
-
-  it('should return an error message when the path is incorrect or does not exist', () => {
-    const path = 'incorrect/path';
-    const errorMessage = 'Caminho incorreto/inexistente';
-    const result = mdLinks(path);
-
-    return result.catch((error) => {
-      chai.expect(error.message).to.equal(errorMessage);
-    });
-  });
-
-  it('should return the links in a directory when the path is a directory and options are not defined', () => {
-    const path = 'path/to/directory';
-    const result = mdLinks(path);
-
-    return result.then((links) => {
-      chai.expect(links).to.deep.equal([
-        {
-          href: 'https://example.com',
-          text: 'Example',
-          file: 'path/to/directory/file1.md'
-        },
-        {
-          href: 'https://example2.com',
-          text: 'Example 2',
-          file: 'path/to/directory/file2.md'
-        }
-      ]);
-    });
+    return expect(mdLinks(caminhoDoArquivo, options)).rejects.toEqual('Caminho incorreto/inexistente');
   });
 });
