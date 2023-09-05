@@ -12,7 +12,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\src\\cli.js",
-            "args": ["C:\\Users\\Maila Ferreira\\desktop\\SAP010-md-links\\testes.arquivos", "--stats"]
+            "args": ["C:\\Users\\Maila Ferreira\\desktop\\SAP010-md-links\\testes.arquivos\\testdiretorio\\testando\\vazio.md", "--stats"]
         }
     ]
 }

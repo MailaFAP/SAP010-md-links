@@ -5,7 +5,7 @@ import axios from 'axios';
 
 //função que extrai os links do arquivo markdown
 export function extraiLinks(texto) {
-  const regex = /\[([^[\]]+)\]\((https?:\/\/[^\s/$.?#].[^\s]*)\)/g;
+  const regex = /\[\s*([^[\]]+)\s*\]\(\s*(https?:\/\/[^\s/$.?#].[^\s]*)\s*\)/g;
   const capturas = [...texto.matchAll(regex)];
   const resultado = capturas.map(captura => ({ href: captura[2], text: captura[1] }));
   return resultado.length !== 0 ? resultado : [{ error: 'Este arquivo não contém links.' }];
