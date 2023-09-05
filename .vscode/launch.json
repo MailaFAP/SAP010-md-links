@@ -12,7 +12,20 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\src\\cli.js",
-            "args": ["C:\\Users\\Maila Ferreira\\desktop\\SAP010-md-links\\testes.arquivos\\testdiretorio\\testando\\vazio.md", "--stats"]
+            "args": ["C:\\Users\\Maila Ferreira\\desktop\\SAP010-md-links\\testes.arquivos\novodir\\README.md"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Jest: current file",
+            //"env": { "NODE_ENV": "test" },
+            "program": "${workspaceFolder}/node_modules/.bin/jest",
+            "args": ["${fileBasenameNoExtension}"],
+            "console": "integratedTerminal",
+            "disableOptimisticBPs": true,
+            "windows": {
+              "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+            }
         }
     ]
 }

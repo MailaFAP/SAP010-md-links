@@ -16,16 +16,17 @@ export function processarArquivo(caminhoDoArquivo) {
   const extensoesPermitidas = ['.md', '.mkd', '.mdwn', '.mdown', '.mdtxt', '.mdtext', '.markdown', '.text'];
   if (extensoesPermitidas.includes(path.extname(caminhoDoArquivo))) {
     const caminhoAbsoluto = path.resolve(caminhoDoArquivo);
-    return fsp
-      .readFile(caminhoAbsoluto, 'utf-8')
-      .then((texto) => {
-        let links = extraiLinks(texto);
-        links.forEach((link) => {
-          link.file = caminhoAbsoluto;
-        });
-        return links;
-      })
-      .catch(error => error);
+    return new Promise((resolve, reject) => {
+      fsp.readFile(caminhoAbsoluto, 'utf-8')
+        .then((texto) => {
+          let links = extraiLinks(texto);
+          links.forEach((link) => {
+            link.file = caminhoAbsoluto;
+          });
+          resolve(links);
+        })
+        .catch(error => reject(error));
+    });
   } else {
     return [{ error: 'Este arquivo não contém extensão Markdown' }];
   }
@@ -61,7 +62,7 @@ export function statsLinks(links) {
   };
 }
 
-function lerArquivo(caminhoDoArquivo) {
+export function lerArquivo(caminhoDoArquivo) {
   return processarArquivo(caminhoDoArquivo)
     .then(lista => {
       return lista;
@@ -69,7 +70,7 @@ function lerArquivo(caminhoDoArquivo) {
     .catch(error => error);
 }
 
-function lerDiretorio(caminhoDoDiretorio, options) {
+export function lerDiretorio(caminhoDoDiretorio, options) {
   let promises = [];
   const arquivos = fs.readdirSync(caminhoDoDiretorio);
   arquivos.forEach((nomeDeArquivo) => {
@@ -115,19 +116,19 @@ function mdLinks(caminhoDoArquivo, options) {
         });
     } else if (fs.statSync(caminhoDoArquivo).isDirectory()) {
       return lerDiretorio(caminhoDoArquivo, options)
-      .then((links) => {
-        if (links.length > 0 && links[0].error === undefined) {
-          if (options.validate) {
-            return validaLinks(links);
-          } else if (options.stats) {
-            return statsLinks(links);
+        .then((links) => {
+          if (links.length > 0 && links[0].error === undefined) {
+            if (options.validate) {
+              return validaLinks(links);
+            } else if (options.stats) {
+              return statsLinks(links);
+            } else {
+              return links;
+            }
           } else {
             return links;
           }
-        } else {
-          return links;
-        }
-      });
+        });
     }
   } catch (e) {
     return Promise.reject('Caminho incorreto/inexistente');
